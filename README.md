@@ -1,49 +1,54 @@
-# Alprog-Final-Project-Implementasi-Kelompok-8-Martabak-POS-Order-Management-System
-Martabak POS &amp; Order Management System Kelompok 8
+// Kelompok 8 Martabak POS & Order Management System Final Project Implementasi Alprog.cpp : This file contains the 'main' function. Program execution begins and ends there.
+//
 
 #include <iostream>
-#include <vector>
 #include <string>
 #include <iomanip>
-#include <algorithm>
 
 using namespace std;
 
 struct Order {
     int orderID;
     string customerName;
-    vector<string> items;
+    string items[10];   
     double totalCost;
     string status;           
     string specialRequest;   
 };
 
-double calculateTotalCost(const vector<string>& items) {
+double calculateTotalCost(const string items[], int itemCount) {
     double cost = 0.0;
-    for (const auto& item : items) {
-        if (item == "Martabak Kacang") cost += 65000;
-        else if (item == "Martabak Coklat") cost += 70000;
-        else if (item == "Martabak Keju") cost += 65000;
-        else if (item == "Topping Kacang") cost += 6000;
-        else if (item == "Topping Coklat") cost += 10000;
-        else if (item == "Topping Keju") cost += 8000;
+    for (int i = 0; i < itemCount; ++i) {
+        if (items[i] == "Martabak Kacang") cost += 65000;
+        else if (items[i] == "Martabak Coklat") cost += 70000;
+        else if (items[i] == "Martabak Keju") cost += 65000;
+        else if (items[i] == "Topping Kacang") cost += 6000;
+        else if (items[i] == "Topping Coklat") cost += 10000;
+        else if (items[i] == "Topping Keju") cost += 8000;
     }
     return cost;
 }
 
 bool isValidItem(const string& item) {
-    vector<string> validItems = {
+    string validItems[6] = {
         "Martabak Kacang", "Martabak Coklat", "Martabak Keju",
         "Topping Kacang", "Topping Coklat", "Topping Keju"
     };
-    return find(validItems.begin(), validItems.end(), item) != validItems.end();
+
+    for (int i = 0; i < 6; ++i) {
+        if (validItems[i] == item) {
+            return true;
+        }
+    }
+    return false;
 }
 
-void takeOrder(vector<Order>& orders) {
+void takeOrder(Order orders[], int& orderCount) {
     int orderID;
     string customerName, specialRequest;
-    vector<string> items;
+    string items[10];
     string item;
+    int itemCount = 0;
 
     cout << "Masukkan ID Pesanan: ";
     cin >> orderID;
@@ -60,7 +65,7 @@ void takeOrder(vector<Order>& orders) {
             cout << "Item tidak valid, coba lagi!" << endl;
             continue;
         }
-        items.push_back(item);
+        items[itemCount++] = item;
     }
 
     cout << "Masukkan permintaan khusus (atau ketik 'tidak' jika tidak ada): ";
@@ -69,15 +74,19 @@ void takeOrder(vector<Order>& orders) {
         specialRequest = "Tidak ada permintaan khusus";
     }
 
-    double totalCost = calculateTotalCost(items);
-    orders.push_back({ orderID, customerName, items, totalCost, "Menunggu", specialRequest });
+    double totalCost = calculateTotalCost(items, itemCount);
+    orders[orderCount++] = { orderID, customerName, {}, totalCost, "Menunggu", specialRequest };
+
+    for (int i = 0; i < itemCount; ++i) {
+        orders[orderCount - 1].items[i] = items[i];
+    }
 
     cout << "Pesanan berhasil dibuat!" << endl;
     cout << "Total Biaya Pesanan: Rp" << fixed << setprecision(2) << totalCost << endl;
 }
 
-void viewActiveOrders(const vector<Order>& orders) {
-    if (orders.empty()) {
+void viewActiveOrders(const Order orders[], int orderCount) {
+    if (orderCount == 0) {
         cout << "Tidak ada pesanan aktif saat ini." << endl;
         return;
     }
@@ -90,22 +99,22 @@ void viewActiveOrders(const vector<Order>& orders) {
         << "Items" << endl;
     cout << string(80, '-') << endl;
 
-    for (const auto& order : orders) {
-        cout << left << setw(10) << order.orderID
-            << setw(20) << order.customerName
-            << setw(15) << fixed << setprecision(2) << order.totalCost
-            << setw(15) << order.status;
+    for (int i = 0; i < orderCount; ++i) {
+        cout << left << setw(10) << orders[i].orderID
+            << setw(20) << orders[i].customerName
+            << setw(15) << fixed << setprecision(2) << orders[i].totalCost
+            << setw(15) << orders[i].status;
 
-        for (size_t i = 0; i < order.items.size(); ++i) {
-            cout << order.items[i];
-            if (i != order.items.size() - 1) cout << ", ";
+        for (int j = 0; j < 10 && !orders[i].items[j].empty(); ++j) {
+            cout << orders[i].items[j];
+            if (j != 9 && !orders[i].items[j + 1].empty()) cout << ", ";
         }
         cout << endl;
-        cout << "   Permintaan Khusus: " << order.specialRequest << endl;
+        cout << "   Permintaan Khusus: " << orders[i].specialRequest << endl;
     }
 }
 
-void updateOrderStatus(vector<Order>& orders) {
+void updateOrderStatus(Order orders[], int orderCount) {
     int orderID;
     string newStatus;
 
@@ -121,9 +130,9 @@ void updateOrderStatus(vector<Order>& orders) {
     }
 
     bool found = false;
-    for (auto& order : orders) {
-        if (order.orderID == orderID) {
-            order.status = newStatus;
+    for (int i = 0; i < orderCount; ++i) {
+        if (orders[i].orderID == orderID) {
+            orders[i].status = newStatus;
             found = true;
             break;
         }
@@ -137,14 +146,14 @@ void updateOrderStatus(vector<Order>& orders) {
     }
 }
 
-void viewToppingUsage(const vector<Order>& orders) {
+void viewToppingUsage(const Order orders[], int orderCount) {
     int kacang = 0, coklat = 0, keju = 0;
 
-    for (const auto& order : orders) {
-        for (const auto& item : order.items) {
-            if (item == "Topping Kacang") kacang++;
-            else if (item == "Topping Coklat") coklat++;
-            else if (item == "Topping Keju") keju++;
+    for (int i = 0; i < orderCount; ++i) {
+        for (int j = 0; j < 10 && !orders[i].items[j].empty(); ++j) {
+            if (orders[i].items[j] == "Topping Kacang") kacang++;
+            else if (orders[i].items[j] == "Topping Coklat") coklat++;
+            else if (orders[i].items[j] == "Topping Keju") keju++;
         }
     }
 
@@ -154,40 +163,30 @@ void viewToppingUsage(const vector<Order>& orders) {
     cout << "Topping Keju: " << keju << " porsi" << endl;
 }
 
-void viewDailySalesReport(const vector<Order>& orders) {
+void viewDailySalesReport(const Order orders[], int orderCount) {
     double totalSales = 0.0;
-    for (const auto& order : orders) {
-        totalSales += order.totalCost;
+    for (int i = 0; i < orderCount; ++i) {
+        totalSales += orders[i].totalCost;
     }
 
     cout << "Laporan Pendapatan Hari Ini: Rp" << fixed << setprecision(2) << totalSales << endl;
 }
 
-void viewMenuPerformance(const vector<Order>& orders) {
+void viewMenuPerformance(const Order orders[], int orderCount) {
     int martabakKacang = 0, martabakCoklat = 0, martabakKeju = 0;
 
-    for (const auto& order : orders) {
-        for (const auto& item : order.items) {
-            if (item == "Martabak Kacang") martabakKacang++;
-            else if (item == "Martabak Coklat") martabakCoklat++;
-            else if (item == "Martabak Keju") martabakKeju++;
+    for (int i = 0; i < orderCount; ++i) {
+        for (int j = 0; j < 10 && !orders[i].items[j].empty(); ++j) {
+            if (orders[i].items[j] == "Martabak Kacang") martabakKacang++;
+            else if (orders[i].items[j] == "Martabak Coklat") martabakCoklat++;
+            else if (orders[i].items[j] == "Martabak Keju") martabakKeju++;
         }
     }
 
-    vector<pair<string, int>> menuSales = {
-        {"Martabak Kacang", martabakKacang},
-        {"Martabak Coklat", martabakCoklat},
-        {"Martabak Keju", martabakKeju}
-    };
-
-    sort(menuSales.begin(), menuSales.end(), [](const pair<string, int>& a, const pair<string, int>& b) {
-        return a.second > b.second;
-        });
-
     cout << "Ranking Penjualan Menu:" << endl;
-    for (const auto& menu : menuSales) {
-        cout << menu.first << ": " << menu.second << " pesanan" << endl;
-    }
+    cout << "Martabak Kacang: " << martabakKacang << " pesanan" << endl;
+    cout << "Martabak Coklat: " << martabakCoklat << " pesanan" << endl;
+    cout << "Martabak Keju: " << martabakKeju << " pesanan" << endl;
 }
 
 void inputProductionPlanning() {
@@ -205,7 +204,8 @@ void inputProductionPlanning() {
 }
 
 int main() {
-    vector<Order> orders;
+    Order orders[100];  
+    int orderCount = 0;
     int choice;
 
     while (true) {
@@ -224,22 +224,22 @@ int main() {
 
         switch (choice) {
         case 1:
-            takeOrder(orders);
+            takeOrder(orders, orderCount);
             break;
         case 2:
-            viewActiveOrders(orders);
+            viewActiveOrders(orders, orderCount);
             break;
         case 3:
-            updateOrderStatus(orders);
+            updateOrderStatus(orders, orderCount);
             break;
         case 4:
-            viewToppingUsage(orders);
+            viewToppingUsage(orders, orderCount);
             break;
         case 5:
-            viewDailySalesReport(orders);
+            viewDailySalesReport(orders, orderCount);
             break;
         case 6:
-            viewMenuPerformance(orders);
+            viewMenuPerformance(orders, orderCount);
             break;
         case 7:
             inputProductionPlanning();
